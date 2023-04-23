@@ -16,4 +16,4 @@
 """
 
 from .fsm import FSM
-from .scan import scan
+from .scanner import scan

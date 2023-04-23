@@ -1,10 +1,10 @@
 """定义具体的单词符号类型"""
 
 # 关键字
-keyword = ['int', 'void', 'return', 'const']
+_keyword = ['int', 'void', 'return', 'const']
 
 # 运算符
-operator = {
+_operator = {
     'arithmetic': ['+', '-', '*', '/', '%'],
     'half': ['=', '>', '<', '!'],
     'relational': ['==', '<=', '>=', '!='],
@@ -13,13 +13,13 @@ operator = {
 }
 
 # 界符
-boundary = ['(', ')', '{', '}', ';', ',']
+_boundary = ['(', ')', '{', '}', ';', ',']
 
 
 # """定义单词符号类型的正则表达式"""
 
 # # 标识符
-# identifier = "[a-zA-Z_][a-zA-Z_0-9]*"
+# _identifier = "[a-zA-Z_][a-zA-Z_0-9]*"
 
 # # 整数
-# integer = "0|([1-9][0-9]*)"
+# _integer = "0|([1-9][0-9]*)"
