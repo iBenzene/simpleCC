@@ -5,6 +5,7 @@
     根据文法产生式字典来构造 LR(1) 分析表.
     
 """
+import os
 import pandas as pd
 from .grammar import _get_grammar_begin
 from .util import _get_grammar, _get_all_symbols, _first, _terminal
@@ -64,7 +65,7 @@ def _items_closure(items, all):
                 # 找到所有形如「B -> ·ξ, b」的项目
                 next = []
                 for oth_item in all:
-                    if oth_item.target == item.undone[0] and oth_item.done == []:
+                    if oth_item.target == item.undone[0] and not oth_item.done:
                         next.append(oth_item)
 
                 # 对于每一个终结符 b, 如果「B -> ·ξ, b」不在闭包中, 则把它加进去
@@ -75,7 +76,7 @@ def _items_closure(items, all):
                         if temp not in closure:
                             closure.append(temp)
                             new.append(temp)
-        if new == []:
+        if not new:
             break
         items_ = new.copy()
     return closure
@@ -102,9 +103,12 @@ def _generate_table():
     all_items = []
     for left, right in grammar_dict.items():
         for symbols in right:
-            symbols_len = len(symbols)
-            items_ = [Item(left, symbols[:i], symbols[i:]) for i in range(symbols_len + 1)]
-            all_items += items_
+            if symbols == ['$']:
+                all_items += [Item(left, [], [])]
+            else:
+                symbols_len = len(symbols)
+                items_ = [Item(left, symbols[:i], symbols[i:]) for i in range(symbols_len + 1)]
+                all_items += items_
 
     # 构造 LR(1) 项目集规范族
     collection = []
@@ -113,6 +117,9 @@ def _generate_table():
 
     all_symbols = _get_all_symbols().copy()
     all_symbols.remove(grammar_begin)
+    if '$' in all_symbols:
+        all_symbols.remove('$')
+
     collection_ = collection.copy()
     while True:
         new = []
@@ -122,7 +129,7 @@ def _generate_table():
                 if next and next not in collection:
                     collection.append(next)
                     new.append(next)
-        if new == []:
+        if not new:
             break
         collection_ = new
 
@@ -144,10 +151,33 @@ def _generate_table():
                     # 面临终结符需要规约
                     production = (item.target, item.done)
                     _parsing_table[item.lookahead][collection.index(items)] = production
+    
+    # 缓存 LR（1） 分析表, 供以后使用
+    _parsing_table.to_csv(table_path, sep=',', index=False, header=True)
+
+
+def _load_table():
+    """
+    从分析表文件 table.txt 中加载 LR(1) 分析表, 
+    若分析表文件不存在, 则自动生成一张 LR(1) 分析表
+    """
+    global table_path
+    table_path = os.path.join(os.path.dirname(__file__), 'table.txt')
+    try:
+        global _parsing_table
+        _parsing_table = pd.read_csv(table_path)
+        for index in _parsing_table.index:
+            for column in _parsing_table.columns:
+                try:
+                    _parsing_table[column][index] = eval(_parsing_table[column][index])
+                except NameError:
+                    pass
+    except:
+        _generate_table()
 
 
 def _get_table():
     """访问 LR(1) 分析表"""
     if _parsing_table.empty:
-        _generate_table()
+        _load_table()
     return _parsing_table

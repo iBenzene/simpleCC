@@ -16,7 +16,8 @@ from .grammar import _get_grammar, _derivate
 _terminal = [
     '$',        # 空
     '#',        # 文本结束符
-    'a', 'b'    # 终结符, <T>
+    'a', 'b',   # 测试终结符, <T>
+    ';'         # 界符
 ]
 
 # 所有符号列表

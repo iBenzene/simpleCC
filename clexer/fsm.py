@@ -16,7 +16,7 @@ class FSM:
       2. 非确定有限状态自动机的确定化
       3. 确定的有限状态自动机最小化
     """
-    def __init__(self, delta: pd.core.frame.DataFrame, init: list, final: list):
+    def __init__(self, delta: pd.DataFrame, init: list, final: list):
         self.delta = delta  # 状态转换矩阵
         self.init = init    # 初态集
         self.final = final  # 终态集
@@ -46,7 +46,7 @@ class FSM:
         for state in state_set:
             next = self.forward(state, chr)
             if not pd.isnull(next):
-                if type(next).__name__ != 'list':
+                if not isinstance(next, list):
                     next = [next]
                 next_set += next
         return next_set
@@ -58,7 +58,7 @@ class FSM:
         for state in state_set:
             epsilon_next = self.forward(state, '')
 
-            if type(epsilon_next).__name__ != 'list':
+            if not isinstance(epsilon_next, list):
                 epsilon_next = [epsilon_next]
             else:
                 epsilon_next = epsilon_next.copy()

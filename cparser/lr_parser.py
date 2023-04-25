@@ -53,7 +53,7 @@ def parse(input: FilePath, output: FilePath):
         if isinstance(parsing_table[csymbol][states[-1]], int):
             _log(no, 'EOF' if not symbols else symbols[-1], istr[0][0], 'move')
             states.append(parsing_table[csymbol][states[-1]])
-            symbols.append(istr[0][0])
+            symbols.append(csymbol)
             istr.pop(0)
 
         # 表项为产生式, 规约
@@ -81,8 +81,8 @@ def parse(input: FilePath, output: FilePath):
         elif parsing_table[csymbol][states[-1]] == 'error':
             _log(no, 'EOF' if not symbols else symbols[-1], 
                  'EOF' if istr[0][1] == '<EOF>' else istr[0][0], 'error')
-            print("语法分析错误: 存在语法错误, 分析中止")
-            break
+            _fout.close()
+            raise NotImplementedError("存在语法错误, 暂不支持自动恢复, 分析中止")
 
     # 关闭输出的目标文件
     _fout.close()

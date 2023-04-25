@@ -63,6 +63,11 @@ def _reduce(symbols: list, production: tuple) -> str:
     第一个元素为产生式左端, 第二个元素为产生式右端符号的列表
     """
     try:
+        # 产生式「A -> ε」
+        if not production[1]:
+            return production[0]
+        
+        # 产生式「A -> a」
         if production[1] == symbols:
             return production[0]
     except:
