@@ -1,5 +1,5 @@
-from .table import _get_table
-from .grammar import _reduce
+from .lr_table import get_table
+from .grammar import reduce
 from typing import Union
 from os import PathLike
 
@@ -34,7 +34,7 @@ def parse(input: FilePath, output: FilePath):
     _fout = open(output, 'w')
 
     istr.append(('#', '<EOF>'))
-    parsing_table = _get_table()
+    parsing_table = get_table()
 
     no = 0          # 序号
     states = [0]    # 状态栈
@@ -51,20 +51,20 @@ def parse(input: FilePath, output: FilePath):
         
         # 表项为状态, 移进
         if isinstance(parsing_table[csymbol][states[-1]], int):
-            _log(no, 'EOF' if not symbols else symbols[-1], istr[0][0], 'move')
+            _log(no, 'EOF' if not symbols else symbols[-1], csymbol, 'move')
             states.append(parsing_table[csymbol][states[-1]])
             symbols.append(csymbol)
             istr.pop(0)
 
         # 表项为产生式, 规约
         elif isinstance(parsing_table[csymbol][states[-1]], tuple):
-            _log(no, symbols[-1], 'EOF' if istr[0][1] == '<EOF>' else istr[0][0], 'reduction')
+            _log(no, symbols[-1], 'EOF' if csymbol == '#' else csymbol, 'reduction')
             production = parsing_table[csymbol][states[-1]]
 
             rlen = len(production[1])
             csymbols = [symbols.pop() for _ in range(rlen)]
             csymbols.reverse()
-            nsymbol = _reduce(csymbols, production)
+            nsymbol = reduce(csymbols, production)
             symbols.append(nsymbol)
 
             for _ in range(rlen):
@@ -80,7 +80,7 @@ def parse(input: FilePath, output: FilePath):
         # 表项为「error」, 发现语法错误
         elif parsing_table[csymbol][states[-1]] == 'error':
             _log(no, 'EOF' if not symbols else symbols[-1], 
-                 'EOF' if istr[0][1] == '<EOF>' else istr[0][0], 'error')
+                 'EOF' if csymbol == '#' else csymbol, 'error')
             _fout.close()
             raise NotImplementedError("存在语法错误, 暂不支持自动恢复, 分析中止")
 

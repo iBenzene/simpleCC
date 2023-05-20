@@ -2,18 +2,20 @@
 分析表生成模块
 
 功能:
-    根据文法产生式字典来构造 LR(1) 分析表.
+    根据文法产生式字典来构造 LR 分析表, 支持 LR(0) 和 LR(1) 分析法.
     
 """
 import os
 import pandas as pd
-from .grammar import _get_grammar_begin
-from .util import _get_grammar, _get_all_symbols, _first, _terminal
+from .grammar import get_grammar_begin
+from .util import get_grammar, get_all_symbols, first, _terminal
 
 
-# LR(1) 分析表
+# LR 分析表
 _parsing_table = pd.DataFrame()
 
+# 展望串长度, 为 0 时生成 LR(0) 分析表, 为 1 时生成 LR(1) 分析表
+_lookahead_len = 0
 
 class Item:
     """
@@ -21,7 +23,7 @@ class Item:
         target: 产生式左部符号
         done: 产生式右部已分析完成的符号列表
         undone: 产生式右部未分析完成的符号列表
-        lookahead: 展望串列表, 对于 LR(1) 文法, 每个展望串的长度为 1
+        lookahead: 展望串列表, 对于 LR(1) 分析法, 每个展望串的长度为 1
     """
     def __init__(self, target, done, undone):
         self.target = target
@@ -48,7 +50,7 @@ class Item:
 
 
 def _items_closure(items, all):
-    """构造 LR(1) 项目集的闭包"""
+    """构造 LR 项目集的闭包"""
     closure = items.copy()
     items_ = closure.copy()
     while True:
@@ -68,14 +70,21 @@ def _items_closure(items, all):
                     if oth_item.target == item.undone[0] and not oth_item.done:
                         next.append(oth_item)
 
-                # 对于每一个终结符 b, 如果「B -> ·ξ, b」不在闭包中, 则把它加进去
                 for next_item in next:
-                    for symbol in _first([followit, item.lookahead]):
-                        temp = next_item.copy()
-                        temp.lookahead = symbol
-                        if temp not in closure:
-                            closure.append(temp)
-                            new.append(temp)
+                    global _lookahead_len
+                    if _lookahead_len == 1:
+                        # LR(1): 对于每一个终结符 b, 如果「B -> ·ξ, b」不在闭包中, 则把它加进去
+                        for symbol in first([followit, item.lookahead]):
+                            temp = next_item.copy()
+                            temp.lookahead = symbol
+                            if temp not in closure:
+                                closure.append(temp)
+                                new.append(temp)
+                    else:
+                        # LR(0): 如果「B -> ·ξ」不在闭包中, 则把它加进去
+                        if next_item not in closure:
+                            closure.append(next_item)
+                            new.append(next_item)
         if not new:
             break
         items_ = new.copy()
@@ -95,9 +104,9 @@ def _items_go(items, symbol, all):
 
 
 def _generate_table():
-    """生成 LR(1) 分析表"""
-    grammar_dict = _get_grammar()
-    grammar_begin = _get_grammar_begin()
+    """生成 LR 分析表"""
+    grammar_dict = get_grammar()
+    grammar_begin = get_grammar_begin()
 
     # 根据文法的产生式规则生成项目
     all_items = []
@@ -110,12 +119,14 @@ def _generate_table():
                 items_ = [Item(left, symbols[:i], symbols[i:]) for i in range(symbols_len + 1)]
                 all_items += items_
 
-    # 构造 LR(1) 项目集规范族
+    # 构造 LR(0) 项目集规范族
     collection = []
-    all_items[0].lookahead = '#'
+    global _lookahead_len
+    if _lookahead_len == 1:
+        all_items[0].lookahead = '#'
     collection.append(_items_closure([all_items[0]], all=all_items))
 
-    all_symbols = _get_all_symbols().copy()
+    all_symbols = get_all_symbols().copy()
     all_symbols.remove(grammar_begin)
     if '$' in all_symbols:
         all_symbols.remove('$')
@@ -133,7 +144,7 @@ def _generate_table():
             break
         collection_ = new
 
-    # 根据项目集规范族和项目集转换函数构造 LR(1) 语法分析表
+    # 根据项目集规范族和项目集转换函数构造 LR 语法分析表
     global _parsing_table
     _parsing_table = pd.DataFrame([{symbol: 'error' for symbol in (all_symbols + ['#'])} for _ in collection])
     for items in collection:
@@ -150,16 +161,22 @@ def _generate_table():
                 else:
                     # 面临终结符需要规约
                     production = (item.target, item.done)
-                    _parsing_table[item.lookahead][collection.index(items)] = production
+                    if _lookahead_len == 1:
+                        # LR(1) 规约
+                        _parsing_table[item.lookahead][collection.index(items)] = production
+                    else:
+                        # LR (0) 规约
+                        for symbol in list(set(_terminal) & set(all_symbols)) + ['#']:
+                            _parsing_table[symbol][collection.index(items)] = production
     
-    # 缓存 LR（1） 分析表, 供以后使用
+    # 缓存 LR 分析表, 供以后使用
     _parsing_table.to_csv(table_path, sep=',', index=False, header=True)
 
 
 def _load_table():
     """
-    从分析表文件 table.txt 中加载 LR(1) 分析表, 
-    若分析表文件不存在, 则自动生成一张 LR(1) 分析表
+    从分析表文件 table.txt 中加载 LR 分析表, 
+    若分析表文件不存在, 则自动生成一张 LR 分析表
     """
     global table_path
     table_path = os.path.join(os.path.dirname(__file__), 'table.txt')
@@ -176,8 +193,8 @@ def _load_table():
         _generate_table()
 
 
-def _get_table():
-    """访问 LR(1) 分析表"""
+def get_table():
+    """访问 LR 分析表"""
     if _parsing_table.empty:
         _load_table()
     return _parsing_table

@@ -34,29 +34,32 @@ def _load_grammar():
                 _grammar_dict[symbols[0]] = [[symbol for symbol in symbols[1:]]]
 
 
-def _get_grammar():
+def get_grammar():
     """访问文法产生式字典"""
     if not _grammar_dict:
         _load_grammar()
     return _grammar_dict
 
 
-def _get_grammar_begin():
+def get_grammar_begin():
     """获取文法的开始符号"""
     if not _grammar_begin:
         _load_grammar()
     return _grammar_begin
 
 
-def _derivate(symbol: str) -> list:
-    """推导"""
-    if symbol in _get_grammar():
-        return _get_grammar()[symbol]
-    else:
-        print("错误: 未知符号 %s" % symbol)
+def derivate(symbol: str, production: tuple) -> list:
+    """
+    推导
+    production 参数要求是一个二元组, 对应一个产生式, 
+    第一个元素为产生式左端, 第二个元素为产生式右端符号的列表
+    """
+    if symbol == production[0]:
+        return production[1].copy()
+    print("错误: %s 推导失败" % symbol)
 
 
-def _reduce(symbols: list, production: tuple) -> str:
+def reduce(symbols: list, production: tuple) -> str:
     """
     规约
     production 参数要求是一个二元组, 对应一个产生式, 

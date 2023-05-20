@@ -1,0 +1,6 @@
+int a = 10
+void main(){
+    int b
+    b = 2
+    return b - a
+}

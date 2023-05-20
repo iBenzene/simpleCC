@@ -54,7 +54,7 @@ def scan(src: FilePath, output: FilePath):
     """
     源码扫描器:
         扫描C--语言的源代码, 
-        输出识别出单词所属的符号类型
+        输出识别出单词符号序列
     """
     # 读取源文件
     try:
