@@ -23,3 +23,16 @@ python3 test.py
 语法分析器封装在包 `cparser` 下，用于对 C-- 源码的单词符号序列进行语法分析的接口方法为 `ll_parser` 方法。
 
 这两个方法在调用时，都分别接收两个必要参数，用于指定输入文件路径和输出文件路径。
+
+下面给出一个调用词法分析器和语法分析器的示例，假设输入的源码文件是 `demo.c` 。
+
+```python
+import clexer
+import cparser
+
+# 对「demo.c」进行词法分析, 结果保存在「demo_lexical」
+clexer.scan("demo.c", "demo_lexical")
+
+# 对「demo_lexical」进行语法分析, 结果保存在「demo_grammar」
+cparser.ll_parse("demo_lexical", "demo_grammar")
+```
